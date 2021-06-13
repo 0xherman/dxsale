@@ -26,6 +26,9 @@
 
 		loadBlocks();
 		loadData();
+		$("#gwei").change(calculateGas);
+		$("#limit").change(calculateGas);
+		calculateGas();
 	};
 	checkConnection();
 	$("#connectBtn").click(connectAccount);
@@ -87,7 +90,6 @@
 		}
 	}
 	async function loadData() {
-		console.log(presaleAddress);
 		if (canConnect && presaleAddress) {
 			try {
 				$("#presaleAddress").val(presaleAddress);
@@ -246,8 +248,17 @@
 	}
 	$("#cancel").click(cancelSnipe);
 
+	function calculateGas() {
+		const web3 = new window.Web3(window.ethereum);
+		let gwei = parseInt(web3.utils.toWei($("#gwei").val(), "gwei"));
+		let limit = parseInt($("#limit").val());
+		let bnb = web3.utils.fromWei((gwei * limit).toString());
+		$("#gasbnb").text(bnb);
+	}
+
 	async function snipe() {
 		if (canConnect && account && transaction && signature) {
+			const web3 = new window.Web3(window.ethereum);
 			let sig = signature;
 			transaction = null;
 			signature = null;
@@ -264,9 +275,6 @@
 		localStorage.removeItem("account");
 		localStorage.removeItem("chainId");
 		$("#connectBtn").show();
-		$("#moai").text(0);
-		$("#bnb").text(0);
-		$("#paid").text(0);
 		$("#address").text("");
 		$("#pending").text(0);
 		$("#lastPaid").text("");
