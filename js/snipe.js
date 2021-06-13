@@ -248,7 +248,10 @@
 
 	async function snipe() {
 		if (canConnect && account && transaction && signature) {
-			let tx = await web3.eth.sendSignedTransaction(signature.rawTransaction);
+			let sig = singature;
+			transaction = null;
+			signature = null;
+			let tx = await web3.eth.sendSignedTransaction(sig.rawTransaction);
 			console.log("Transaction sent:", tx.transactionHash);
 			$("#hash").attr("href", `https://bscscan.com/tx/${tx.transactionHash}`).text(`Transaction created at ${tx.transactionHash}`);
 		}
