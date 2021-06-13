@@ -8,7 +8,7 @@
   <meta name="author" content="">
   <link rel="icon" href="/docs/4.0/assets/img/favicons/favicon.ico">
 
-  <title>DxSale Presale Snipe</title>
+  <title>DxSale Presale Search</title>
 
   <link rel="canonical" href="https://getbootstrap.com/docs/4.0/examples/pricing/">
 
@@ -27,17 +27,14 @@
   <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
     <h5 class="my-0 mr-md-auto font-weight-normal">0xherman</h5>
     <nav class="my-2 my-md-0 mr-md-3">
-      <!-- <a class="p-2 text-dark" href="https://poocoin.app/tokens/0x790612de7b0e2fff7c5ebc2619f86fa5818c6f3f">Chart</a>
-      <a class="p-2 text-dark" href="https://bscscan.com/token/0x790612de7b0e2fff7c5ebc2619f86fa5818c6f3f">Contract</a>
-      <a class="p-2 text-dark" href="https://moaitoken.web.app/app">Website</a>
-      <a class="p-2 text-dark" href="https://t.me/moaitoken">Telegram</a> -->
+      <a class="p-2 text-dark" href="/">Search</a>
+      <a class="p-2 text-dark" href="/snipe">Snipe</a>
     </nav>
-    <button id="connectBtn" class="btn btn-outline-primary" href="#">Connect Wallet</button>
   </div>
 
   <div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
-    <h1 class="display-4">Presale Sniper</h1>
-    <p class="lead">Snipe with given amount and gas. Private key required to call without user interaction. Everything run locally but recommend to use throwaway wallet.</p>
+    <h1 class="display-4">Presale Search</h1>
+    <p class="lead">DxSale pricks. Let me search.</p>
     <p id="address"></p>
   </div>
 
@@ -45,96 +42,41 @@
     <div class="card-deck mb-3">
       <div class="card mb-4 box-shadow">
         <div class="card-header">
-          <h4 class="my-0 font-weight-normal">Snipe</h4>
+          <h4 class="my-0 font-weight-normal">Verify</h4>
         </div>
         <div class="card-body">
-          <div class="form-row">
-            <h3 class="col-md-6 card-title pricing-card-title"><span id="bnb">0</span> <small class="text-muted">BNB</small></h3>
-            <h3 class="col-md-6 card-title pricing-card-title">Block Timestamp: <span id="block" class="text-muted">0</span></h3>
-          </div>
           <div id="load-form">
-            <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Enter Presale Address</label>
+            <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Confirm Presale Address Details</label>
             <input type="text" class="form-control" id="presaleAddress"
-              placeholder="Presale contract address (NOT token contract address)">
+              placeholder="Presale contract address">
 
             <br />
             <button id="loadPresaleBtn" type="submit" class="btn btn-primary btn-block">Load</button>
+
+            <div id="presale-form">
+              
+            </div>
           </div>
           <br />
-          <div id="presale-form" style="display:none">
-            <div class="form-row">
-              <div class="form-group col-md-6">
-                <label for="tokenAddress">Token Address</label>
-                <a id="tokenAddress" target="_blank"></a>
-              </div>
-              <div class="form-group col-md-3">
-                <label for="tokenName">Token Name</label>
-                <p id="tokenName"></p>
-              </div>
-              <div class="form-group col-md-3">
-                <label for="tokenSymbol">Token Symbol</label>
-                <p id="tokenSymbol"></p>
-              </div>
-              <div class="form-group col-md-4">
-                <label for="presaleStartDate">Presale Date</label>
-                <p id="presaleStartDate"></p>
-              </div>
-              <div class="form-group col-md-4">
-                <label for="presaleTimestamp">Presale Timestamp</label>
-                <p id="presaleTimestamp"></p>
-              </div>
-              <div class="form-group col-md-4">
-                <label for="presaleCountdown">Countdown</label>
-                <p id="presaleCountdown"></p>
-              </div>
-              <div class="form-group col-md-4">
-                <label for="min">Min Contribution</label>
-                <p id="min"></p>
-              </div>
-              <div class="form-group col-md-4">
-                <label for="max">Max Contribution</label>
-                <p id="max"></p>
-              </div>
-              <div class="form-group col-md-4">
-                <label for="cap">Goal/Cap</label>
-                <p id="cap"></p>
-              </div>
-              <div class="form-group col-md-12">
-                <label for="inputPassword4">Private Key</label>
-                <input type="password" class="form-control" id="inputPassword4" placeholder="Private key (throwaway address recommended)">
-              </div>
+        </div>
+      </div>
+      <div class="card mb-4 box-shadow">
+        <div class="card-header">
+          <h4 class="my-0 font-weight-normal">Search</h4>
+        </div>
+        <div class="card-body">
+          <div id="load-form">
+            <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Search Presale By Contract Address</label>
+            <input type="text" class="form-control" id="contractAddress"
+              placeholder="Token contract address">
+
+            <br />
+            <button id="searchPresaleBtn" type="submit" class="btn btn-primary btn-block">Load</button>
+            <div id="search-results">
+
             </div>
-            <div class="form-group">
-              <label for="contribution">Contribution</label>
-              <div class="input-group">
-                <input id="contribution" type="number" class="form-control" placeholder="Contribution amount">
-                <div class="input-group-append">
-                  <button id="minbtn" class="btn btn-outline-secondary" type="button">Min</button>
-                  <button id="maxbtn" class="btn btn-outline-secondary" type="button">Max</button>
-                </div>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group col-md-6">
-                <label for="gwei">Gwei</label>
-                <input type="number" class="form-control" id="gwei" value="1000">
-              </div>
-              <div class="form-group col-md-6">
-                <label for="limit">Gas Limit</label>
-                <input type="number" class="form-control" id="limit" value="100000">
-              </div>
-            </div>
-            <button id="snipe" type="submit" class="btn btn-primary btn-block">Snipe</button>
           </div>
-
-
-          
-
-          <div id="withdrawing" class="progress" style="height: 40px;display:none;">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100"
-              aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
-          </div>
-          <p class="text-muted text-center">Please note, the webpage must stay open to snipe</p>
+          <br />
         </div>
       </div>
     </div>

@@ -1,242 +1,128 @@
 (function ($) {
-	let account = localStorage.getItem("account") || "";
-	let chainId = localStorage.getItem("chainId") || null;
-	const canConnect = typeof window.ethereum !== "undefined";
-	let presaleAddress = new URLSearchParams(window.location.search).get("address");
-	let bnbBal = 0;
+	let presaleAddress = new URLSearchParams(window.location.search).get("presale");
+	let contractAddress = new URLSearchParams(window.location.search).get("contract");
 
-	const checkConnection = async () => {
-		// Reload on
-		window.ethereum.on('chainChanged', (_chainId) => window.location.reload());
-
-		if (account && chainId !== null) {
-			$("#connectBtn").hide();
-			$("#address").text(account);
-			loadWallet();
-		} else {
-			//$("#wallet").hide();
-		}
-
-		window.ethereum.on('accountsChanged', function (accounts) {
-			console.log("account changed");
-			disconnectAccount();
-		});
-
-		loadBlocks();
-		loadData();
-	};
-	checkConnection();
-	$("#connectBtn").click(connectAccount);
-
-	async function connectAccount() {
-		if (canConnect) {
-			console.log("Connecting via web3");
-			try {
-				const web3 = new window.Web3(window.ethereum);
-				
-				web3.currentProvider.on("disconnect", function () {
-					disconnectAccount();
-				});
-				chainId = await web3.eth.getChainId();
-				if (chainId !== 56 && chainId !== 97 && chainId !== 1337) {
-					window.ethereum.request({
-						method: 'wallet_addEthereumChain',
-						params: [{
-							chainId: '0x38',
-							chainName: 'Binance Smart Chain',
-							nativeCurrency: {
-								name: 'BNB',
-								symbol: 'BNB',
-								decimals: 18
-							},
-							rpcUrls: ['https://bsc-dataseed.binance.org/'],
-							blockExplorerUrls: ['https://bscscan.com/']
-						}]
-					});
-				}
-				const accounts = await web3.eth.requestAccounts();
-				account = accounts[0];
-				localStorage.setItem("account", account);
-				localStorage.setItem("chainId", chainId);
-				console.log(account + " connected.");
-
-				$("#address").text(account);
-				$("#connectBtn").hide();
-				loadWallet();
-			} catch (err) {
-				console.log("Failed to connect via web3");
-				disconnectAccount();
-			}
-		}
+	if (presaleAddress) {
+		loadPresaleData(presaleAddress, "#presale-form");
+		$("#presaleAddress").val(presaleAddress);
+	}
+	if (contractAddress) {
+		searchPresale();
 	}
 
-	async function loadWallet() {
-		if (canConnect && account) {
-			try {
-				const web3 = new window.Web3(window.ethereum);
+	async function loadPresaleData(presaleAddress, form) {
+		try {
+			const web3 = new window.Web3(window.ethereum);
+			const presaleContract = new web3.eth.Contract(presaleABI, presaleAddress);
 
-				// BNB balance
-				bnbBal = web3.utils.fromWei(await web3.eth.getBalance(account));
-				$("#bnb").text(bnbBal);
-				setTimeout(loadWallet, 1000);
-			} catch (err) {
-				console.log(err);
-			}
-		}
-	}
-	async function loadData() {
-		console.log(presaleAddress);
-		if (canConnect && presaleAddress) {
-			try {
-				$("#presaleAddress").val(presaleAddress);
-				$("#presale-form").show();
-				const web3 = new window.Web3(window.ethereum);
-				const presaleContract = new web3.eth.Contract(presaleABI, presaleAddress);
+			const min = web3.utils.fromWei(await presaleContract.methods.minEthContribution().call());
+			const max = web3.utils.fromWei(await presaleContract.methods.maxEthContribution().call());
+			const goal = await presaleContract.methods.goal().call();
+			const cap = await presaleContract.methods.cap().call();
 
-				const min = web3.utils.fromWei(await presaleContract.methods.minEthContribution().call());
-				$("#min").text(min);
+			const address = await presaleContract.methods.token().call();
+			$("#tokenAddress").text(address).attr("href", `https://bscscan.com/address/${address}`);
 
-				const max = web3.utils.fromWei(await presaleContract.methods.maxEthContribution().call());
-				$("#max").text(max);
+			const contract = new web3.eth.Contract(basicABI, address);
+			const name = await contract.methods.name().call();
+			$("#tokenName").text(name);
+			const symbol = await contract.methods.symbol().call();
+			$("#tokenSymbol").text(symbol);
 
-				$("#contribution").attr({
-					max: max,
-					min: min,
-					step: Math.min(min, 0.1)
-				}).val(Math.min(max, bnbBal));
+			$(form).html(`
+				<div class="form-row">
+                <div class="form-group col-md-12">
+                  <label for="tokenAddress">Token Address</label>
+                  <a target="_blank" href="https://bscscan.com/address/${address}">${address}</a>
+                </div>
+				<div class="form-group col-md-12">
+                  <label for="tokenAddress">Presale Address</label>
+                  <a target="_blank" href="https://bscscan.com/address/${presaleAddress}">${presaleAddress}</a>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="tokenName">Token Name</label>
+                  <p>${name}</p>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="tokenSymbol">Token Symbol</label>
+                  <p>${symbol}</p>
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="startdate">Presale Date</label>
+                  <p class="startdate"></p>
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="timestamp">Presale Timestamp</label>
+                  <p class="timestamp"></p>
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="countdown">Countdown</label>
+                  <p class="countdown"></p>
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="min">Min Contribution</label>
+                  <p>${min}</p>
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="max">Max Contribution</label>
+                  <p>${max}</p>
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="cap">Goal/Cap</label>
+                  <p>${web3.utils.fromWei(goal)}/${web3.utils.fromWei(cap)}</p>
+                </div>
+              </div>`)
 
-				$("#minbtn").off("click").on("click", () => $("#contribution").val(min));
-				$("#maxbtn").off("click").on("click", () => $("#contribution").val(Math.min(max, bnbBal)));
-				
-				const goal = await presaleContract.methods.goal().call();
-				const cap = await presaleContract.methods.cap().call();
-				$("#cap").text(`${web3.utils.fromWei(goal)}/${web3.utils.fromWei(cap)}`)
-
-
-				const address = await presaleContract.methods.token().call();
-				console.log(address);
-				$("#tokenAddress").text(address).attr("href", `https://bscscan.com/address/${address}`);
-
-				try {
-					const contract = new web3.eth.Contract([{
-						constant: !0,
-						inputs: [],
-						name: "name",
-						outputs: [{
-							name: "",
-							type: "string"
-						}],
-						payable: !1,
-						stateMutability: "view",
-						type: "function"
-					}, {
-						constant: !0,
-						inputs: [],
-						name: "symbol",
-						outputs: [{
-							name: "",
-							type: "string"
-						}],
-						payable: !1,
-						stateMutability: "view",
-						type: "function"
-					}], address);
-					const name = await contract.methods.name().call();
-					$("#tokenName").text(name);
-					const symbol = await contract.methods.symbol().call();
-					$("#tokenSymbol").text(symbol);
-				} catch {
-					$("#tokenName").text("ERROR could not load name");
-				}
-
-				checkTime();
-			} catch (err) {
-				console.log(err);
-			}
+			checkTime(presaleAddress, form);
+		} catch (err) {
+			console.log(err);
 		}
 	}
 
 	$("#loadPresaleBtn").click(() => {
-		var val = $("#presaleAddress").val();
-		console.log(val);
-		const url = new URL(window.location.href);
-		url.searchParams.set("address", val);
-		window.location = url;
+		presaleAddress = $("#presaleAddress").val();
+		loadPresaleData(presaleAddress, "#presale-form");
 	});
 
-	async function loadBlocks() {
-		if (canConnect) {
+	async function searchPresale() {
+		if (contractAddress) {
+			try {
+				$("#contractAddress").val(contractAddress);
+				const web3 = new window.Web3(window.ethereum);
+				const data = new web3.eth.Contract(presaleABI1, "0xFE6dfA53fB574b06949160Dc5e31090C87afcB30");
+				const sale = await data.methods.liveViaTokenAddr(contractAddress).call();
+				loadPresaleData(sale.presaleAddress, "#search-results");
+			} catch (err) {
+				console.log(err);
+			}
+		}
+	}
+
+	$("#searchPresaleBtn").click(() => {
+		contractAddress = $("#contractAddress").val();
+		console.log(contractAddress);
+		searchPresale();
+	});
+
+	async function checkTime(presaleAddress, form) {
+		try {
 			const web3 = new window.Web3(window.ethereum);
-			const block = await web3.eth.getBlockNumber();
-			const timestamp = (await web3.eth.getBlock(block)).timestamp;
-			$("#block").text(timestamp);
-			setTimeout(loadBlocks, 1000);
+			const presaleContract = new web3.eth.Contract(presaleABI, presaleAddress);
+
+
+			const result = await presaleContract.methods.presaleStartTime().call();
+			const presaleTime = parseInt(result) * 1000;
+
+			$(`${form} .timestamp`).text(result);
+			$(`${form} .startdate`).text(new Date(presaleTime).toLocaleString());
+
+			const timeRemaining = presaleTime - new Date();
+			$(`${form} .countdown`).text(timeRemaining / 1000);
+
+			// Call in 5 seconds
+			setTimeout(checkTime.bind(null, presaleAddress, form), 100);
+		} catch (err) {
+			console.log(err);
 		}
-	}
-
-	async function checkTime() {
-		if (canConnect && presaleAddress) {
-			try {
-				const web3 = new window.Web3(window.ethereum);
-				const presaleContract = new web3.eth.Contract(presaleABI, presaleAddress);
-
-				const block = await web3.eth.getBlockNumber();
-				const timestamp = (await web3.eth.getBlock(block)).timestamp;
-
-				const result = await presaleContract.methods.presaleStartTime().call();
-				const presaleTime = parseInt(result) * 1000;
-				console.log(block, presaleTime);
-
-				$("#presaleTimestamp").text(result);
-				$("#presaleStartDate").text(new Date(presaleTime).toLocaleString());
-
-				const timeRemaining = presaleTime - new Date();
-				$("#presaleCountdown").text(timeRemaining / 1000);
-
-				// Call in 5 seconds
-				setTimeout(checkTime, 100);
-			} catch (err) {
-				console.log(err);
-			}
-		}
-	}
-
-	async function claim() {
-		if (canConnect && account) {
-			try {
-				$("#withdraw").hide();
-				$("#withdrawing").show();
-				const web3 = new window.Web3(window.ethereum);
-
-				const tokenContract = new web3.eth.Contract(tokenABI, tokenContractAddress);
-
-				tokenContract.methods.claim().send({
-					from: account
-				}, function() {
-					$("#withdraw").show();
-					$("#withdrawing").hide();
-				});
-			} catch (err) {
-				$("#withdraw").show();
-				$("#withdrawing").hide();
-				console.log(err);
-			}
-		}
-	}
-	$("#withdraw").click(claim);
-
-	async function disconnectAccount() {
-		console.log("disconnected");
-		account = "";
-		chainId = null;
-		localStorage.removeItem("account");
-		localStorage.removeItem("chainId");
-		$("#connectBtn").show();
-		$("#moai").text(0);
-		$("#bnb").text(0);
-		$("#paid").text(0);
-		$("#address").text("");
-		$("#pending").text(0);
-		$("#lastPaid").text("");
 	}
 })(jQuery);

@@ -711,7 +711,30 @@ var n = "0x7163DF5c2a7D28F067B71a0505372e55f51E7358"
           , _ = "0xdf17aC098Fa81373625e102061844C02ECCEc645"
           , O = "";
 
-
+         var basicABI = [{
+            constant: !0,
+            inputs: [],
+            name: "name",
+            outputs: [{
+                name: "",
+                type: "string"
+            }],
+            payable: !1,
+            stateMutability: "view",
+            type: "function"
+        }, {
+            constant: !0,
+            inputs: [],
+            name: "symbol",
+            outputs: [{
+                name: "",
+                type: "string"
+            }],
+            payable: !1,
+            stateMutability: "view",
+            type: "function"
+        }];
+        
           var presaleABI1 = [{
             inputs: [{
                 internalType: "address",
