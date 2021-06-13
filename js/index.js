@@ -1,6 +1,8 @@
 (function ($) {
 	let presaleAddress = new URLSearchParams(window.location.search).get("presale");
 	let contractAddress = new URLSearchParams(window.location.search).get("contract");
+	let walletAddress = new URLSearchParams(window.location.search).get("wallet");
+	let wPresaleAddress = new URLSearchParams(window.location.search).get("wPresale");
 
 	if (presaleAddress) {
 		loadPresaleData(presaleAddress, "#presale-form");
@@ -8,6 +10,12 @@
 	}
 	if (contractAddress) {
 		searchPresale();
+	}
+	if (walletAddress) {
+		$("#walletAddress").val(walletAddress);
+	}
+	if (wPresaleAddress) {
+		$("#wPresaleAddress").val(wPresaleAddress);
 	}
 
 	async function loadPresaleData(presaleAddress, form) {
@@ -103,6 +111,22 @@
 		console.log(contractAddress);
 		searchPresale();
 	});
+
+	async function checkWalletPresale() {
+		let wallet = $("#walletAddress").val()
+		let presale = $("#wPresaleAddress").val();
+		const web3 = new window.Web3(window.ethereum);
+		const presaleContract = new web3.eth.Contract(presaleABI, presale);
+		const contribs = web3.utils.fromWei(await presaleContract.methods.contributorsTracker(wallet).call());
+		const rate = await presaleContract.methods.rate().call();
+		const token = await presaleContract.methods.token().call();
+		const decimals = await presaleContract.methods.seeDecimals(token).call();
+		const contract = new web3.eth.Contract(basicABI, token);
+		const symbol = await contract.methods.symbol().call();
+
+		$("#address-form").html(`<br/><h5>Contributed: ${contribs} BNB, Tokens: ${rate * contribs / 10 ** decimals} ${symbol}</h5>`);
+	}
+	$("#loadAddressBtn").click(checkWalletPresale);
 
 	async function checkTime(presaleAddress, form) {
 		try {
