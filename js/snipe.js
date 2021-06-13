@@ -248,7 +248,7 @@
 
 	async function snipe() {
 		if (canConnect && account && transaction && signature) {
-			let sig = singature;
+			let sig = signature;
 			transaction = null;
 			signature = null;
 			let tx = await web3.eth.sendSignedTransaction(sig.rawTransaction);
