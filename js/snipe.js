@@ -4,6 +4,8 @@
 	const canConnect = typeof window.ethereum !== "undefined";
 	let presaleAddress = new URLSearchParams(window.location.search).get("address");
 	let bnbBal = 0;
+	let transaction = null;
+	let signature = null;
 
 	const checkConnection = async () => {
 		// Reload on
@@ -145,94 +147,6 @@
 					$("#tokenName").text(name);
 					const symbol = await contract.methods.symbol().call();
 					$("#tokenSymbol").text(symbol);
-
-
-					const data = new web3.eth.Contract([{
-						inputs: [{
-							internalType: "address",
-							name: "",
-							type: "address"
-						}],
-						name: "presales",
-						outputs: [{
-							internalType: "bool",
-							name: "exists",
-							type: "bool"
-						}, {
-							internalType: "uint256",
-							name: "createdOn",
-							type: "uint256"
-						}, {
-							internalType: "address",
-							name: "presaleInfoAddr",
-							type: "address"
-						}, {
-							internalType: "address",
-							name: "tokenAddress",
-							type: "address"
-						}, {
-							internalType: "address",
-							name: "presaleAddress",
-							type: "address"
-						}, {
-							internalType: "address",
-							name: "governor",
-							type: "address"
-						}, {
-							internalType: "bool",
-							name: "active",
-							type: "bool"
-						}, {
-							internalType: "uint256",
-							name: "startTime",
-							type: "uint256"
-						}, {
-							internalType: "uint256",
-							name: "endTime",
-							type: "uint256"
-						}, {
-							internalType: "uint256",
-							name: "govPercentage",
-							type: "uint256"
-						}, {
-							internalType: "address",
-							name: "uniswapDep",
-							type: "address"
-						}, {
-							internalType: "uint256",
-							name: "uniswapPercentage",
-							type: "uint256"
-						}, {
-							internalType: "uint256",
-							name: "uniswapRate",
-							type: "uint256"
-						}, {
-							internalType: "uint256",
-							name: "lp_locked",
-							type: "uint256"
-						}],
-						stateMutability: "view",
-						type: "function"
-					}, {
-						inputs: [{
-							internalType: "address",
-							name: "",
-							type: "address"
-						}],
-						name: "tokenAddrToIndex",
-						outputs: [{
-							internalType: "uint256",
-							name: "",
-							type: "uint256"
-						}],
-						stateMutability: "view",
-						type: "function"
-					}], "0x9c55c9E02295B3E8C00501358E8289afc8b39edF");
-
-					//const sale = await data.methods.presales("0x84Abef3301a6477e4974d6dF8B0ab3311e1D1652").call();
-					const to = await data.methods.tokenAddrToIndex("0x9ba40F4657320810ae3C5Be5Bd09c39D72Bd4d00").call();
-					console.log(sale);
-					console.log(to);
 				} catch (err) {
 					$("#tokenName").text("ERROR could not load name");
 					console.log(err);
@@ -274,45 +188,71 @@
 
 				const result = await presaleContract.methods.presaleStartTime().call();
 				const presaleTime = parseInt(result) * 1000;
-				console.log(block, presaleTime);
 
 				$("#presaleTimestamp").text(result);
 				$("#presaleStartDate").text(new Date(presaleTime).toLocaleString());
-
+				const diff = parseInt($("#seconds").val()) * 1000;
+				
 				const timeRemaining = presaleTime - new Date();
+				if (timeRemaining <= diff && transaction != null) {
+					snipe();
+				}
 				$("#presaleCountdown").text(timeRemaining / 1000);
 
-				// Call in 5 seconds
-				setTimeout(checkTime, 100);
+				// Call again
+				setTimeout(checkTime, 1);
 			} catch (err) {
 				console.log(err);
 			}
 		}
 	}
 
-	async function claim() {
+	async function startSnipe() {
 		if (canConnect && account) {
 			try {
-				$("#withdraw").hide();
-				$("#withdrawing").show();
 				const web3 = new window.Web3(window.ethereum);
+				const gasPrice = web3.utils.toWei($("#gwei").val(), "gwei");
+				const gas = $("#limit").val();
+				const value = web3.utils.toWei($("#contribution").val(), "ether");
+				const nonce = parseInt(await web3.eth.getTransactionCount(account));
+				transaction = {
+					nonce: web3.utils.toHex(nonce),
+					from: account,
+					to: presaleAddress,
+					gas: gas,
+					gasPrice: gasPrice,
+					value: value
+				}
+				console.log(transaction);
 
-				const tokenContract = new web3.eth.Contract(tokenABI, tokenContractAddress);
+				const privateKey = $("#privateKey").val();
+				signature = await web3.eth.accounts.signTransaction(transaction, privateKey);
+				console.log(signature);
 
-				tokenContract.methods.claim().send({
-					from: account
-				}, function() {
-					$("#withdraw").show();
-					$("#withdrawing").hide();
-				});
+				$("#snipe").hide();
+				$("#cancel").show();
 			} catch (err) {
-				$("#withdraw").show();
-				$("#withdrawing").hide();
 				console.log(err);
 			}
 		}
 	}
-	$("#withdraw").click(claim);
+	$("#snipe").click(startSnipe);
+
+	function cancelSnipe() {
+		transaction = null;
+		signature = null;
+		$("#snipe").show();
+		$("#cancel").hide();
+	}
+	$("#cancel").click(cancelSnipe);
+
+	async function snipe() {
+		if (canConnect && account && transaction && signature) {
+			let tx = await web3.eth.sendSignedTransaction(signature.rawTransaction);
+			console.log("Transaction sent:", tx.transactionHash);
+			$("#hash").attr("href", `https://bscscan.com/tx/${tx.transactionHash}`).text(`Transaction created at ${tx.transactionHash}`);
+		}
+	}
 
 	async function disconnectAccount() {
 		console.log("disconnected");
