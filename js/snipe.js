@@ -275,6 +275,7 @@
 		localStorage.removeItem("account");
 		localStorage.removeItem("chainId");
 		$("#connectBtn").show();
+		$("#bnb").text("0");
 		$("#address").text("");
 		$("#pending").text(0);
 		$("#lastPaid").text("");
